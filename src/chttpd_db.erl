@@ -50,8 +50,14 @@ handle_request(#httpd{path_parts=[DbName|RestParts],method=Method,
     {_, []} ->
         do_db_req(Req, fun db_req/2);
     {_, [SecondPart|_]} ->
-        Handler = couch_util:get_value(SecondPart, DbUrlHandlers, fun db_req/2),
-        do_db_req(Req, Handler)
+        case couch_util:get_value(SecondPart, 
+                chttpd:multiple_dbs_url_handlers()) of
+        undefined ->
+            Handler = couch_util:get_value(SecondPart, DbUrlHandlers, fun db_req/2),
+            do_db_req(Req, Handler);
+        MHandler ->
+            do_multiple_dbs_req(Req, MHandler)
+        end
     end.
 
 handle_changes_req(#httpd{method='GET'}=Req, Db) ->
@@ -197,6 +203,13 @@ delete_db_req(#httpd{}=Req, DbName) ->
 do_db_req(#httpd{path_parts=[DbName|_], user_ctx=Ctx}=Req, Fun) ->
     fabric:get_security(DbName, [{user_ctx,Ctx}]), % calls check_is_reader
     Fun(Req, #db{name=DbName, user_ctx=Ctx}).
+
+do_multiple_dbs_req(#httpd{path_parts=[DbName|_], user_ctx=Ctx}=Req, Fun) ->
+    Dbs = lists:foldl(fun(Name, Acc) ->
+            fabric:get_security(Name, [{user_ctx,Ctx}]),
+            [#db{name=Name, user_ctx=Ctx}|Acc]
+        end, [], binary:split(DbName, <<",">> , [trim])),
+    Fun(Req, Dbs).
 
 db_req(#httpd{method='GET',path_parts=[DbName]}=Req, _Db) ->
     % measure the time required to generate the etag, see if it's worth it

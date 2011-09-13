@@ -32,6 +32,10 @@
     send_delayed_error/2, end_delayed_json_response/1,
     get_delayed_req/1]).
 
+%% rather than exporting it we probably need at some point to just edit
+%% the #httpd{} record
+-export([multiple_dbs_url_handlers/0]).
+
 -record(delayed_resp, {
     start_fun,
     req,
@@ -256,6 +260,7 @@ url_handler("_oauth") ->        fun couch_httpd_oauth:handle_oauth_req/1;
 %% showroom_http module missing in bigcouch
 url_handler("_restart") ->      fun showroom_http:handle_restart_req/1;
 url_handler("_membership") ->   fun mem3_httpd:handle_membership_req/1;
+url_handler("_search") ->       fun couch_es_http:multidbs_search_req/1;
 url_handler(_) ->               fun chttpd_db:handle_request/1.
 
 db_url_handlers() ->
@@ -265,7 +270,8 @@ db_url_handlers() ->
         {<<"_design">>,         fun chttpd_db:handle_design_req/2},
         {<<"_temp_view">>,      fun chttpd_view:handle_temp_view_req/2},
         {<<"_changes">>,        fun chttpd_db:handle_changes_req/2},
-        {<<"_search">>,         fun chttpd_external:handle_search_req/2}
+        {<<"_search">>,         fun couch_es_http:db_search_req/2},
+        {<<"_percolator">>,     fun couch_es_http:db_percolator_req/2}
     ].
 
 design_url_handlers() ->
@@ -276,6 +282,11 @@ design_url_handlers() ->
         {<<"_update">>,         fun chttpd_show:handle_doc_update_req/3},
         {<<"_info">>,           fun chttpd_db:handle_design_info_req/3},
         {<<"_rewrite">>,        fun chttpd_rewrite:handle_rewrite_req/3}
+    ].
+
+multiple_dbs_url_handlers() ->
+    [
+        {<<"_search">>,         fun couch_es_http:db_search_req/2}
     ].
 
 % Utilities
