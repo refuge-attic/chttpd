@@ -271,7 +271,8 @@ db_url_handlers() ->
         {<<"_temp_view">>,      fun chttpd_view:handle_temp_view_req/2},
         {<<"_changes">>,        fun chttpd_db:handle_changes_req/2},
         {<<"_search">>,         fun couch_es_http:db_search_req/2},
-        {<<"_percolator">>,     fun couch_es_http:db_percolator_req/2}
+        {<<"_percolator">>,     fun couch_es_http:db_percolator_req/2},
+        {<<"_percolate">>,     fun couch_es_http:db_percolate_req/2}
     ].
 
 design_url_handlers() ->
