@@ -764,6 +764,8 @@ update_doc_result_to_json(#doc{id=DocId}, Result) ->
     update_doc_result_to_json(DocId, Result);
 update_doc_result_to_json(DocId, {ok, NewRev}) ->
     {[{id, DocId}, {rev, couch_doc:rev_to_str(NewRev)}]};
+update_doc_result_to_json(DocId, {accepted, NewRev}) ->
+    {[{id, DocId}, {rev, couch_doc:rev_to_str(NewRev)}, {accepted, true}]};
 update_doc_result_to_json(DocId, Error) ->
     {_Code, ErrorStr, Reason} = chttpd:error_info(Error),
     {[{id, DocId}, {error, ErrorStr}, {reason, Reason}]}.
@@ -1176,6 +1178,8 @@ parse_changes_query(Req) ->
             Args#changes_args{timeout=list_to_integer(Value)};
         {"include_docs", "true"} ->
             Args#changes_args{include_docs=true};
+        {"conflicts", "true"} ->
+            Args#changes_args{conflicts=true};
         {"filter", _} ->
             Args#changes_args{filter=Value};
         _Else -> % unknown key value pair, ignore.
